@@ -23,7 +23,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link href="/" className="inline-block mb-5">
-              <div style={{ mixBlendMode: "lighten" }}><Image src="/logo.png" alt="Ultimate Building Services Inc" width={200} height={80} className="h-16 w-auto object-contain" /></div>
+              <Image src="/logo.png" alt="Ultimate Building Services Inc" width={200} height={80} className="h-16 w-auto object-contain" />
             </Link>
             <p className="text-white/40 text-sm font-light leading-relaxed mb-5">
               Family-owned commercial janitorial and building maintenance. A Full-Service Janitorial Company serving Las Vegas since day one.
@@ -56,7 +56,7 @@ export default function Footer() {
             </ul>
             <div className="font-cond font-bold text-xs tracking-[0.2em] uppercase text-[#F5C518] mb-3">Quick Links</div>
             <ul className="space-y-2">
-              {[{ label: "About Us", href: "/about" }, { label: "Why Choose UBS", href: "/about" }, { label: "Careers", href: "/careers" }, { label: "Get a Quote", href: "/contact" }].map((l) => (
+              {[{ label: "About Us", href: "/about" }, { label: "Why Choose UBS", href: "/about" }, { label: "Careers", href: "/careers" }, { label: "Book a Service", href: "/book" }, { label: "Get a Quote", href: "/contact" }].map((l) => (
                 <li key={l.label}><Link href={l.href} className="text-white/45 text-sm font-light hover:text-white transition-colors">{l.label}</Link></li>
               ))}
             </ul>
