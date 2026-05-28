@@ -15,8 +15,8 @@ export default function PageHero({ tag, title, highlight, sub }: PageHeroProps) 
       {/* Background image */}
       <div className="absolute inset-0 z-0">
         <Image src="/header-bg.png" alt="Ultimate Building Services Las Vegas" fill className="object-cover object-center" priority />
-        <div className="absolute inset-0 bg-[#0D0F1E]/75" />
-        <div className="absolute inset-0" style={{background:"linear-gradient(to right, rgba(13,15,30,0.9) 50%, rgba(13,15,30,0.5) 100%)"}} />
+        <div className="absolute inset-0 bg-[#0D0F1E]/50" />
+        <div className="absolute inset-0" style={{background:"linear-gradient(to right, rgba(13,15,30,0.75) 45%, rgba(13,15,30,0.2) 100%)"}} />
         <div className="absolute bottom-0 left-0 right-0 h-24" style={{background:"linear-gradient(to top, #0D0F1E, transparent)"}} />
       </div>
 

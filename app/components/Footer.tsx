@@ -23,7 +23,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <Link href="/" className="inline-block mb-5">
-              <Image src="/logo.png" alt="Ultimate Building Services Inc" width={200} height={80} className="h-16 w-auto object-contain" />
+              <div style={{ mixBlendMode: "lighten" }}><Image src="/logo.png" alt="Ultimate Building Services Inc" width={200} height={80} className="h-16 w-auto object-contain" /></div>
             </Link>
             <p className="text-white/40 text-sm font-light leading-relaxed mb-5">
               Family-owned commercial janitorial and building maintenance. A Full-Service Janitorial Company serving Las Vegas since day one.

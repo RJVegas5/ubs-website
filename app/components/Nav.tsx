@@ -37,17 +37,20 @@ export default function Nav() {
         }`}
         style={{ borderBottom: "1px solid rgba(245,197,24,0.2)" }}
       >
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-18" style={{height:"72px"}}>
-          {/* Logo */}
-          <Link href="/" className="flex items-center group">
-            <Image
-              src="/logo.png"
-              alt="Ultimate Building Services Inc Logo"
-              width={180}
-              height={72}
-              className="h-14 w-auto object-contain group-hover:scale-105 transition-transform duration-200"
-              priority
-            />
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between" style={{ height: "72px" }}>
+
+          {/* Logo — mix-blend-mode: lighten removes the black background */}
+          <Link href="/" className="flex items-center group flex-shrink-0">
+            <div style={{ mixBlendMode: "lighten" }} className="group-hover:scale-105 transition-transform duration-200">
+              <Image
+                src="/logo.png"
+                alt="Ultimate Building Services Inc - Full Service Janitorial Las Vegas"
+                width={200}
+                height={80}
+                className="h-14 w-auto object-contain"
+                priority
+              />
+            </div>
           </Link>
 
           {/* Desktop links */}
@@ -98,6 +101,9 @@ export default function Nav() {
             exit={{ opacity: 0, y: -20 }}
             className="fixed top-[72px] left-0 right-0 z-40 bg-[#0D0F1E]/98 backdrop-blur-md border-b border-[#F5C518]/20 py-6 px-6"
           >
+            <div className="mb-4 pb-4 border-b border-white/10" style={{ mixBlendMode: "lighten" }}>
+              <Image src="/logo.png" alt="Ultimate Building Services" width={160} height={64} className="h-12 w-auto object-contain" />
+            </div>
             {links.map((l, i) => (
               <motion.div key={l.href} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}>
                 <Link href={l.href} className={`block font-cond font-bold text-lg tracking-widest uppercase py-3 border-b border-white/5 transition-colors ${isActive(l.href) ? "text-[#F5C518]" : "text-white/80 hover:text-[#F5C518]"}`}>
@@ -105,8 +111,10 @@ export default function Nav() {
                 </Link>
               </motion.div>
             ))}
-            <a href="tel:7027952855" className="block font-display text-2xl text-[#F5C518] mt-5">(702) 795-2855</a>
-            <Link href="/contact" className="mt-4 block text-center font-cond font-bold text-sm tracking-widest uppercase bg-[#F5C518] text-[#0D0F1E] py-3 rounded-sm">Get a Quote</Link>
+            <a href="tel:7027952855" className="block font-display text-2xl text-[#F5C518] mt-5 mb-4">(702) 795-2855</a>
+            <Link href="/contact" className="block text-center font-cond font-bold text-sm tracking-widest uppercase bg-[#F5C518] text-[#0D0F1E] py-3 rounded-sm">
+              Get a Quote
+            </Link>
           </motion.div>
         )}
       </AnimatePresence>

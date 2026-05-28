@@ -54,9 +54,9 @@ export default function Home() {
             quality={90}
           />
           {/* Dark overlay for text readability */}
-          <div className="absolute inset-0 bg-[#0D0F1E]/65" />
+          <div className="absolute inset-0 bg-[#0D0F1E]/35" />
           {/* Left gradient for text contrast */}
-          <div className="absolute inset-0" style={{background: "linear-gradient(to right, rgba(13,15,30,0.85) 40%, rgba(13,15,30,0.2) 100%)"}} />
+          <div className="absolute inset-0" style={{background: "linear-gradient(to right, rgba(13,15,30,0.7) 35%, rgba(13,15,30,0.05) 100%)"}} />
           {/* Bottom fade */}
           <div className="absolute bottom-0 left-0 right-0 h-32" style={{background: "linear-gradient(to top, #0D0F1E, transparent)"}} />
         </div>
@@ -157,7 +157,7 @@ export default function Home() {
               <div className="absolute -top-4 -left-4 w-14 h-14 bg-[#F5C518] z-0" />
               {/* Use the header image here too as a preview */}
               <div className="relative z-10 overflow-hidden" style={{aspectRatio:"4/3"}}>
-                <Image src="/header-bg.png" alt="UBS Professional Cleaning Las Vegas" fill className="object-cover object-center" />
+                <Image src="/about-cleaning.png" alt="UBS Professional Commercial Cleaning Las Vegas" fill className="object-cover object-center" />
                 <div className="absolute inset-0 bg-[#0D0F1E]/30" />
                 <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                   className="absolute bottom-6 left-6 right-6 bg-[#0D0F1E]/90 border border-[#F5C518]/20 p-4">
