@@ -19,6 +19,9 @@ export async function GET(req: NextRequest) {
     .select("*")
     .order("start_datetime", { ascending: true });
 
+  const leadId    = searchParams.get("lead_id");
+  const customerId = searchParams.get("customer_id");
+
   if (month) {
     const start = `${month}-01T00:00:00Z`;
     const [y, m] = month.split("-").map(Number);
@@ -26,7 +29,9 @@ export async function GET(req: NextRequest) {
     query = query.gte("start_datetime", start).lt("start_datetime", `${nextMonth}-01T00:00:00Z`);
   }
 
-  if (status) query = query.eq("status", status);
+  if (status)     query = query.eq("status", status);
+  if (leadId)     query = query.eq("lead_id", leadId);
+  if (customerId) query = query.eq("customer_id", customerId);
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
