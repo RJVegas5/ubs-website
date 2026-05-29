@@ -240,6 +240,8 @@ export interface Activity {
 
 // ── Booking Types ──────────────────────────────────────────────────────────
 
+export type ConnecteamSyncStatus = "pending" | "synced" | "failed" | "disabled";
+
 export interface Booking {
   id: string;
   service: string | null;
@@ -255,7 +257,12 @@ export interface Booking {
   time_slot: string | null;
   instructions: string | null;
   notes: string | null;
+  photos: string[];
   status: string;
+  lead_id: string | null;
+  // Connecteam sync
+  connecteam_sync_status: ConnecteamSyncStatus | null;
+  connecteam_external_id: string | null;
   created_at: string;
 }
 
