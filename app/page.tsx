@@ -74,14 +74,17 @@ function CtaStrip() {
           </Link>
           <a
             href="tel:7027952855"
-            className="font-cond font-bold text-sm tracking-widest uppercase text-white px-10 py-4 transition-colors"
+            className="font-cond font-bold text-sm tracking-widest uppercase text-white px-10 py-4 transition-colors duration-200 flex items-center gap-2.5 cursor-pointer"
             style={{
               background: "rgba(255,255,255,0.06)",
               backdropFilter: "blur(12px)",
               border: "1px solid rgba(255,255,255,0.15)",
             }}
           >
-            📞 (702) 795-2855
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.7A2 2 0 012.18 1h3a2 2 0 012 1.72c.12.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L6.91 8.4a16 16 0 006.72 6.72l1.76-1.76a2 2 0 012.11-.45c.9.36 1.85.6 2.81.7A2 2 0 0122 16.92z"/>
+            </svg>
+            (702) 795-2855
           </a>
         </div>
       </div>

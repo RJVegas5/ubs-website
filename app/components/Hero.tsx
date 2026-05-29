@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -8,9 +8,39 @@ const words = ["SPACES.", "OFFICES.", "FACILITIES.", "FUTURES."];
 
 interface Particle { x: number; y: number; vx: number; vy: number; size: number; opacity: number; }
 
+// Count-up animation — runs once on mount, respects prefers-reduced-motion
+function CountStat({ target, suffix = "", delay = 0 }: { target: number; suffix?: string; delay?: number }) {
+  const [count, setCount] = useState(0);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    let rafId = 0;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) { setCount(target); return; }
+    const timer = setTimeout(() => {
+      const duration = 1800;
+      let t0: number | null = null;
+      const step = (ts: number) => {
+        if (t0 === null) t0 = ts;
+        const p = Math.min((ts - t0) / duration, 1);
+        const eased = 1 - (1 - p) ** 3;
+        setCount(Math.round(eased * target));
+        if (p < 1) rafId = requestAnimationFrame(step);
+      };
+      rafId = requestAnimationFrame(step);
+    }, delay);
+    return () => { clearTimeout(timer); cancelAnimationFrame(rafId); };
+  }, [target, delay]);
+  return <>{count}{suffix}</>;
+}
+
+const PhoneIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.7A2 2 0 012.18 1h3a2 2 0 012 1.72c.12.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L6.91 8.4a16 16 0 006.72 6.72l1.76-1.76a2 2 0 012.11-.45c.9.36 1.85.6 2.81.7A2 2 0 0122 16.92z"/>
+  </svg>
+);
+
 export default function Hero() {
   const [wordIndex, setWordIndex] = useState(0);
-  const [particles, setParticles] = useState<Particle[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const heroRef = useRef<HTMLElement>(null);
   const animRef = useRef<number>(0);
@@ -19,6 +49,7 @@ export default function Hero() {
   const textY = useTransform(scrollY, [0, 600], [0, -60]);
   const opacity = useTransform(scrollY, [0, 400], [1, 0]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     const interval = setInterval(() => setWordIndex(i => (i + 1) % words.length), 2600);
     return () => clearInterval(interval);
@@ -56,7 +87,6 @@ export default function Hero() {
         ctx.fillStyle = `rgba(245, 197, 24, ${p.opacity})`;
         ctx.fill();
       });
-      // Light streaks
       pts.forEach((p, i) => {
         if (i % 8 === 0) {
           ctx.beginPath();
@@ -74,27 +104,25 @@ export default function Hero() {
   }, []);
 
   const stats = [
-    { num: "20+", label: "Years Experience" },
-    { num: "500+", label: "Clients Served" },
-    { num: "5", label: "Cities Covered" },
-    { num: "100%", label: "Licensed & Insured" },
+    { label: "Years Experience", target: 20, suffix: "+" },
+    { label: "Clients Served",   target: 500, suffix: "+" },
+    { label: "Cities Covered",   target: 5,   suffix: "" },
+    { label: "Licensed & Insured", target: 100, suffix: "%" },
   ];
 
   return (
     <section ref={heroRef} className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-[#070915]">
-      {/* Parallax background image */}
+      {/* Parallax background */}
       <motion.div className="absolute inset-0 z-0 scale-110" style={{ y: imgY }}>
         <Image src="/header-bg.png" alt="Ultimate Building Services Las Vegas" fill className="object-cover object-center" priority quality={95} />
         <div className="absolute inset-0 bg-[#070915]/50" />
         <div className="absolute inset-0" style={{ background: "linear-gradient(105deg, rgba(7,9,21,0.92) 38%, rgba(7,9,21,0.3) 100%)" }} />
-        {/* Animated gradient pulse */}
         <motion.div
           animate={{ opacity: [0.15, 0.35, 0.15] }}
           transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           className="absolute inset-0"
           style={{ background: "radial-gradient(ellipse at 20% 50%, rgba(59,79,200,0.25) 0%, transparent 60%)" }}
         />
-        {/* Gold light sweep */}
         <motion.div
           animate={{ x: ["-100%", "200%"] }}
           transition={{ duration: 8, repeat: Infinity, ease: "linear", repeatDelay: 4 }}
@@ -103,21 +131,17 @@ export default function Hero() {
         />
       </motion.div>
 
-      {/* Particle canvas */}
       <canvas ref={canvasRef} className="absolute inset-0 z-[1] pointer-events-none opacity-60" />
 
-      {/* Grid */}
       <div className="absolute inset-0 z-[2] opacity-[0.04]" style={{
         backgroundImage: `linear-gradient(rgba(245,197,24,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(245,197,24,0.6) 1px, transparent 1px)`,
         backgroundSize: "80px 80px",
       }} />
 
-      {/* Gold top line */}
-      <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+      <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] }}
         className="absolute top-0 left-0 right-0 h-[3px] z-10 origin-left"
         style={{ background: "linear-gradient(90deg, #F5C518, #D4A800, #F5C518)" }} />
 
-      {/* Floor reflection */}
       <div className="absolute bottom-0 left-0 right-0 h-32 z-[2]"
         style={{ background: "linear-gradient(to top, rgba(59,79,200,0.08), transparent)" }} />
 
@@ -132,20 +156,19 @@ export default function Hero() {
 
           {/* Animated headline */}
           <div className="overflow-hidden mb-1">
-            <motion.div initial={{ y: 120 }} animate={{ y: 0 }} transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            <motion.div initial={{ y: 120 }} animate={{ y: 0 }} transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] }}
               className="font-display text-[clamp(72px,10vw,120px)] leading-[0.85] text-white tracking-wide" style={{ textShadow: "0 0 80px rgba(59,79,200,0.3)" }}>
               CLEAN
             </motion.div>
           </div>
 
-          {/* Swapping word */}
           <div className="relative overflow-hidden mb-1" style={{ height: "clamp(72px,10vw,120px)" }}>
             <AnimatePresence mode="wait">
               <motion.div key={wordIndex}
                 initial={{ y: "100%", opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: "-100%", opacity: 0 }}
-                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] }}
                 className="absolute font-display text-[clamp(72px,10vw,120px)] leading-[0.85] text-[#F5C518] tracking-wide"
                 style={{ textShadow: "0 0 60px rgba(245,197,24,0.4)" }}>
                 {words[wordIndex]}
@@ -154,7 +177,7 @@ export default function Hero() {
           </div>
 
           <div className="overflow-hidden mb-8">
-            <motion.div initial={{ y: 120 }} animate={{ y: 0 }} transition={{ duration: 0.9, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            <motion.div initial={{ y: 120 }} animate={{ y: 0 }} transition={{ duration: 0.9, delay: 0.5, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] }}
               className="font-display text-[clamp(72px,10vw,120px)] leading-[0.85] text-white tracking-wide" style={{ textShadow: "0 0 80px rgba(59,79,200,0.3)" }}>
               STRONGER.
             </motion.div>
@@ -165,7 +188,7 @@ export default function Hero() {
             Ultimate Building Services, Inc. is a family-owned janitorial and building maintenance company serving Las Vegas businesses — going several steps further, every time.
           </motion.p>
 
-          {/* Glassmorphism CTA buttons */}
+          {/* CTAs */}
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.9 }}
             className="flex flex-wrap gap-4 mb-14">
             <Link href="/contact"
@@ -186,13 +209,14 @@ export default function Hero() {
             </Link>
 
             <a href="tel:7027952855"
-              className="group font-cond font-semibold text-sm tracking-widest uppercase px-8 py-4 rounded-sm transition-all duration-300 flex items-center gap-2"
+              className="group font-cond font-semibold text-sm tracking-widest uppercase px-8 py-4 rounded-sm transition-all duration-300 flex items-center gap-2.5 cursor-pointer"
               style={{ background: "rgba(245,197,24,0.08)", backdropFilter: "blur(12px)", border: "1px solid rgba(245,197,24,0.25)" }}>
-              <span className="text-[#F5C518]">📞 (702) 795-2855</span>
+              <span className="text-[#F5C518]"><PhoneIcon /></span>
+              <span className="text-[#F5C518]">(702) 795-2855</span>
             </a>
           </motion.div>
 
-          {/* Stats */}
+          {/* Count-up stats */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 }}
             className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8"
             style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
@@ -201,7 +225,7 @@ export default function Hero() {
                 className="group">
                 <div className="font-display text-4xl md:text-5xl text-[#F5C518] leading-none mb-1 group-hover:scale-110 transition-transform origin-left"
                   style={{ textShadow: "0 0 30px rgba(245,197,24,0.3)" }}>
-                  {s.num}
+                  <CountStat target={s.target} suffix={s.suffix} delay={1200 + i * 100} />
                 </div>
                 <div className="font-cond text-[10px] tracking-widest uppercase text-white/40">{s.label}</div>
               </motion.div>
