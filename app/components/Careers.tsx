@@ -26,7 +26,7 @@ export default function Careers() {
 
   const handleSubmit = async () => {
     try {
-      await fetch("/api/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, type: "career_application" }) });
+      await fetch("/api/careers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
     } catch { /* ok */ }
     setSubmitted(true);
   };

@@ -1,52 +1,75 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   const data = await req.json();
+  const supabase = getSupabaseAdmin();
+  let leadId: string | null = null;
 
-  // ── Supabase insert ──────────────────────────────────────────────────────
-  // To enable: set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_KEY in Vercel
-  // Then create table "leads" in Supabase with columns matching the fields below
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+  // 1. Save lead to Supabase
+  if (supabase) {
+    try {
+      const lead = {
+        first_name: data.firstName ?? null,
+        last_name: data.lastName ?? null,
+        company_name: data.businessName ?? data.company_name ?? null,
+        email: data.email ?? null,
+        phone: data.phone ?? null,
+        address: null,
+        service: data.service ?? null,
+        building_type: data.buildingType ?? null,
+        sq_footage: data.sqFootage ?? null,
+        frequency: data.frequency ?? null,
+        notes: data.notes ?? null,
+        status: "new",
+        source: "quote_form",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        converted_to_customer: false,
+      };
 
-    if (supabaseUrl && supabaseKey) {
-      await fetch(`${supabaseUrl}/rest/v1/leads`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": supabaseKey,
-          "Authorization": `Bearer ${supabaseKey}`,
-          "Prefer": "return=minimal",
-        },
-        body: JSON.stringify({
-          service: data.service || null,
-          building_type: data.buildingType || null,
-          sq_footage: data.sqFootage || null,
-          frequency: data.frequency || null,
-          first_name: data.firstName || null,
-          last_name: data.lastName || null,
-          business_name: data.businessName || null,
-          email: data.email || null,
-          phone: data.phone || null,
-          notes: data.notes || null,
-          created_at: new Date().toISOString(),
-          status: "new",
-        }),
-      });
+      const { data: leadRow, error: insertError } = await supabase
+        .from("leads")
+        .insert(lead)
+        .select("id")
+        .single();
+
+      if (insertError) throw insertError;
+      leadId = leadRow?.id ?? null;
+    } catch (e) {
+      console.error("Lead insert error:", e);
     }
-  } catch (e) {
-    console.error("Supabase error:", e);
+
+    // 2. Create notification
+    if (leadId) {
+      try {
+        await supabase.from("notifications").insert({
+          type: "new_lead",
+          title: "New Quote Request",
+          body: `${data.businessName ?? `${data.firstName ?? ""} ${data.lastName ?? ""}`} requested a quote for ${data.service ?? "services"}`,
+          link: `/admin?view=leads&id=${leadId}`,
+          read: false,
+        });
+
+        await supabase.from("activities").insert({
+          entity_type: "lead",
+          entity_id: leadId,
+          action: "created",
+          description: "Lead created via quote request form",
+          created_by: "system",
+        });
+      } catch (e) {
+        console.error("Notification error:", e);
+      }
+    }
   }
 
-  // ── Email notification via Resend ─────────────────────────────────────────
-  // To enable: set RESEND_API_KEY in Vercel env vars
-  // Sign up free at resend.com
+  // 3. Email notifications
   try {
     const resendKey = process.env.RESEND_API_KEY;
     if (resendKey) {
       const emailBody = `
-NEW QUOTE REQUEST - Ultimate Building Services
+NEW QUOTE REQUEST — Ultimate Building Services
 
 Service: ${data.service}
 Building Type: ${data.buildingType}
@@ -61,13 +84,14 @@ Phone: ${data.phone}
 
 Notes: ${data.notes || "None"}
 
+CRM Lead ID: ${leadId ?? "N/A"}
 Submitted: ${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles" })} PT
       `.trim();
 
       // Notify owner
       await fetch("https://api.resend.com/emails", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${resendKey}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
         body: JSON.stringify({
           from: "UBS Website <noreply@ultimatebuildingservices.com>",
           to: ["ultimate@prosharedservices.com"],
@@ -80,15 +104,14 @@ Submitted: ${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles
       if (data.email) {
         await fetch("https://api.resend.com/emails", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${resendKey}` },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${resendKey}` },
           body: JSON.stringify({
             from: "Ultimate Building Services <noreply@ultimatebuildingservices.com>",
             to: [data.email],
             subject: "We received your quote request — Ultimate Building Services",
-            html: `
-<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0D0F1E;color:white;padding:40px;border-top:3px solid #F5C518;">
+            html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;background:#0D0F1E;color:white;padding:40px;border-top:3px solid #F5C518;">
   <img src="https://ultimatebuildingservices.com/logo.png" alt="UBS" style="height:60px;margin-bottom:24px;" />
-  <h1 style="font-size:28px;color:white;margin-bottom:8px;">Thanks, ${data.firstName}!</h1>
+  <h1 style="font-size:28px;color:white;">Thanks, ${data.firstName}!</h1>
   <p style="color:rgba(255,255,255,0.6);font-size:16px;line-height:1.6;">We received your quote request for <strong style="color:#F5C518">${data.service}</strong> and will get back to you within <strong style="color:#F5C518">2 business hours</strong>.</p>
   <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(245,197,24,0.2);padding:20px;margin:24px 0;border-radius:4px;">
     <p style="color:rgba(255,255,255,0.4);font-size:12px;margin-bottom:4px;">YOUR REQUEST SUMMARY</p>
@@ -108,5 +131,5 @@ Submitted: ${new Date().toLocaleString("en-US", { timeZone: "America/Los_Angeles
     console.error("Email error:", e);
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, leadId });
 }

@@ -4,15 +4,15 @@ import Image from "next/image";
 
 export default function Footer() {
   const services = [
-    { name: "Commercial Janitorial", href: "/services" },
-    { name: "Building Maintenance", href: "/services" },
-    { name: "Pressure Washing", href: "/services" },
-    { name: "Window Cleaning", href: "/services" },
-    { name: "Carpet & Floor Care", href: "/services" },
-    { name: "Electrostatic Disinfection", href: "/services" },
-    { name: "Commercial Painting", href: "/services" },
-    { name: "Drywall Services", href: "/services" },
-    { name: "Exterior Maintenance", href: "/services" },
+    { name: "Commercial Janitorial", href: "/services/commercial-janitorial" },
+    { name: "Building Maintenance", href: "/services/building-maintenance" },
+    { name: "Pressure Washing", href: "/services/pressure-washing" },
+    { name: "Window Cleaning", href: "/services/window-cleaning" },
+    { name: "Carpet & Floor Care", href: "/services/floor-care" },
+    { name: "Electrostatic Disinfection", href: "/services/electrostatic-disinfection" },
+    { name: "Carpet Cleaning", href: "/services/carpet-cleaning" },
+    { name: "Post Construction Cleanup", href: "/services/post-construction-cleanup" },
+    { name: "All Services", href: "/services" },
   ];
   const areas = ["Las Vegas", "Henderson", "Summerlin", "North Las Vegas", "Boulder City"];
 
@@ -56,7 +56,7 @@ export default function Footer() {
             </ul>
             <div className="font-cond font-bold text-xs tracking-[0.2em] uppercase text-[#F5C518] mb-3">Quick Links</div>
             <ul className="space-y-2">
-              {[{ label: "About Us", href: "/about" }, { label: "Why Choose UBS", href: "/about" }, { label: "Careers", href: "/careers" }, { label: "Book a Service", href: "/book" }, { label: "Get a Quote", href: "/contact" }].map((l) => (
+              {[{ label: "About Us", href: "/about" }, { label: "Why Choose UBS", href: "/about" }, { label: "Careers", href: "/careers" }, { label: "Book a Service", href: "/book" }, { label: "Get a Quote", href: "/contact" }, { label: "Customer Portal", href: "/portal" }].map((l) => (
                 <li key={l.label}><Link href={l.href} className="text-white/45 text-sm font-light hover:text-white transition-colors">{l.label}</Link></li>
               ))}
             </ul>

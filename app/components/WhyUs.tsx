@@ -106,7 +106,7 @@ export default function WhyUs() {
               <p className="text-white/60 text-sm font-light leading-relaxed mb-6 relative z-10">
                 We don&apos;t just clean — we build relationships. Your satisfaction is our measure of success, and we don&apos;t stop until the job is done right.
               </p>
-              <a href="#contact" className="relative z-10 inline-block font-cond font-bold text-xs tracking-widest uppercase bg-[#F5C518] text-[#0D0F1E] px-6 py-3 hover:bg-[#D4A800] transition-colors">
+              <a href="/contact" className="relative z-10 inline-block font-cond font-bold text-xs tracking-widest uppercase bg-[#F5C518] text-[#0D0F1E] px-6 py-3 hover:bg-[#D4A800] transition-colors">
                 Start Today
               </a>
             </motion.div>

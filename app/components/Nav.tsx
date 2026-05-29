@@ -16,11 +16,13 @@ export default function Nav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   const links = [
     { label: "Services", href: "/services" },
     { label: "About", href: "/about" },
+    { label: "Contact", href: "/contact" },
     { label: "Careers", href: "/careers" },
   ];
 
@@ -62,6 +64,13 @@ export default function Nav() {
             <a href="tel:7027952855" className="font-cond font-semibold text-[#F5C518] text-sm tracking-wider hover:text-white transition-colors">
               (702) 795-2855
             </a>
+            <Link href="/portal"
+              className="font-cond font-semibold text-xs tracking-widest uppercase px-4 py-2 transition-all duration-200"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "2px", color: "rgba(255,255,255,0.55)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "white"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.55)"; }}>
+              Portal
+            </Link>
             <Link href="/book"
               className="font-cond font-bold text-xs tracking-widest uppercase px-5 py-2.5 transition-all duration-200 group relative overflow-hidden"
               style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "2px", color: "white" }}>
@@ -89,7 +98,7 @@ export default function Nav() {
             className="fixed top-[76px] left-0 right-0 z-40 py-6 px-6"
             style={{ background: "rgba(7,9,21,0.98)", backdropFilter: "blur(24px)", borderBottom: "1px solid rgba(245,197,24,0.15)" }}>
             <Image src="/logo.png" alt="UBS" width={160} height={64} className="h-11 w-auto object-contain mb-5" />
-            {[...links, { label: "Book a Service", href: "/book" }].map((l, i) => (
+            {[...links, { label: "Book a Service", href: "/book" }, { label: "Customer Portal", href: "/portal" }].map((l, i) => (
               <motion.div key={l.href} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}>
                 <Link href={l.href} className={`block font-cond font-bold text-lg tracking-widest uppercase py-3 border-b border-white/5 transition-colors ${isActive(l.href) ? "text-[#F5C518]" : "text-white/80"}`}>
                   {l.label}

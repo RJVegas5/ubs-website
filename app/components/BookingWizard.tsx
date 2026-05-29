@@ -1,6 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface BookingData {
@@ -474,7 +475,7 @@ function SuccessScreen({ data }: { data: BookingData }) {
           </div>
         </div>
         <div className="flex gap-4 justify-center">
-          <a href="/" className="font-cond font-bold text-sm tracking-widest uppercase px-8 py-3" style={{ background: "#F5C518", color: "#0D0F1E", borderRadius: "2px" }}>Back to Home</a>
+          <Link href="/" className="font-cond font-bold text-sm tracking-widest uppercase px-8 py-3" style={{ background: "#F5C518", color: "#0D0F1E", borderRadius: "2px" }}>Back to Home</Link>
           <a href="tel:7027952855" className="font-cond font-semibold text-sm tracking-widest uppercase px-8 py-3" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", color: "white", borderRadius: "2px" }}>📞 (702) 795-2855</a>
         </div>
       </motion.div>
