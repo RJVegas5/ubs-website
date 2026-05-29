@@ -5,11 +5,13 @@ import {
   mapLeadToConnecteamPayload,
   createConnecteamJobOrShift,
 } from "@/lib/connecteam";
+import { generateTempPassword, sendPortalWelcomeEmail } from "@/lib/email";
 
 // Statuses that signal "this lead is approved and ready to be scheduled"
 const CONNECTEAM_AUTO_SYNC_STATUSES = ["approved", "won"] as const;
 
-// Next.js 16: params is a Promise — must be awaited
+// ── GET ───────────────────────────────────────────────────────────────────────
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -27,6 +29,8 @@ export async function GET(
   if (error) return NextResponse.json({ error: error.message }, { status: 404 });
   return NextResponse.json({ data });
 }
+
+// ── PATCH ─────────────────────────────────────────────────────────────────────
 
 export async function PATCH(
   req: NextRequest,
@@ -59,10 +63,121 @@ export async function PATCH(
     });
   }
 
-  // ── Connecteam auto-sync ─────────────────────────────────────────────────
-  // Trigger when status moves to "approved" or "won" AND not already synced.
-  // A Connecteam failure never rolls back the lead update.
-  const newStatus = body.status as string | undefined;
+  // ── Auto-convert to customer on "approved" ────────────────────────────────
+  // Runs once per lead — skips if already converted.
+  const newStatus        = body.status as string | undefined;
+  const alreadyConverted = data?.converted_to_customer === true;
+
+  let customerResult: {
+    created: boolean;
+    customerId?: string | number;
+    emailSent?: boolean;
+    emailError?: string;
+  } = { created: false };
+
+  if (newStatus === "approved" && !alreadyConverted) {
+    try {
+      // 1. Build customer record from lead
+      const tempPassword = generateTempPassword();
+      const portalEmail  = data.email?.toLowerCase().trim() ?? null;
+
+      const customerPayload = {
+        company_name:          data.company_name,
+        contact_name:          [data.first_name, data.last_name].filter(Boolean).join(" ") || null,
+        email:                 data.email,
+        phone:                 data.phone,
+        address:               data.address,
+        building_type:         data.building_type,
+        notes:                 data.notes,
+        is_active:             true,
+        lifetime_value:        0,
+        outstanding_balance:   0,
+        // Portal credentials (only if they have an email)
+        portal_email:          portalEmail,
+        portal_password_hash:  portalEmail ? tempPassword : null,
+        created_at:            new Date().toISOString(),
+      };
+
+      const { data: customer, error: custErr } = await supabase
+        .from("customers")
+        .insert(customerPayload)
+        .select()
+        .single();
+
+      if (custErr) throw new Error(`Customer insert failed: ${custErr.message}`);
+
+      // 2. Mark lead as converted
+      await supabase.from("leads").update({
+        converted_to_customer: true,
+        customer_id:           String(customer.id),
+        updated_at:            new Date().toISOString(),
+      }).eq("id", id);
+
+      // Propagate to the returned data object
+      data.converted_to_customer = true;
+      data.customer_id           = String(customer.id);
+
+      // 3. Activity log
+      await supabase.from("activities").insert({
+        entity_type: "lead",
+        entity_id:   id,
+        action:      "converted_to_customer",
+        description: `Lead approved and converted to customer (ID: ${customer.id})${portalEmail ? ". Portal access created." : "."}`,
+        created_by:  "system",
+      });
+
+      // 4. CRM notification
+      await supabase.from("notifications").insert({
+        type:  "new_lead",
+        title: "Lead Converted to Customer",
+        body:  `${data.company_name ?? data.first_name ?? "Lead"} has been approved and converted to a customer.`,
+        link:  `/admin?view=customers`,
+        read:  false,
+      });
+
+      customerResult = { created: true, customerId: customer.id };
+
+      // 5. Send portal welcome email (only if they have an email address)
+      if (portalEmail) {
+        const emailResult = await sendPortalWelcomeEmail({
+          contactName:  customer.contact_name,
+          companyName:  customer.company_name,
+          portalEmail,
+          tempPassword,
+        });
+
+        customerResult.emailSent  = emailResult.sent;
+        customerResult.emailError = emailResult.error;
+
+        await supabase.from("activities").insert({
+          entity_type: "lead",
+          entity_id:   id,
+          action:      emailResult.sent ? "portal_welcome_sent" : "portal_welcome_failed",
+          description: emailResult.sent
+            ? `Portal welcome email sent to ${portalEmail}`
+            : `Portal welcome email failed: ${emailResult.error ?? "unknown"}`,
+          created_by: "system",
+        });
+      }
+
+      console.log(`[leads/${id}] Auto-converted to customer ${customer.id}; email=${customerResult.emailSent}`);
+    } catch (convErr) {
+      const msg = convErr instanceof Error ? convErr.message : String(convErr);
+      console.error(`[leads/${id}] Auto-convert failed:`, msg);
+
+      await supabase.from("activities").insert({
+        entity_type: "lead",
+        entity_id:   id,
+        action:      "conversion_failed",
+        description: `Auto-conversion to customer failed: ${msg}`,
+        created_by:  "system",
+      });
+
+      customerResult = { created: false, emailError: msg };
+    }
+  }
+
+  // ── Connecteam auto-sync ──────────────────────────────────────────────────
   const alreadySynced = data?.connecteam_sync_status === "synced";
   const shouldAutoSync =
     isConnecteamConfigured() &&
@@ -92,7 +207,6 @@ export async function PATCH(
         created_by:  "system",
       });
 
-      // Merge sync fields into response so the CRM updates immediately
       data.connecteam_sync_status = "synced";
       data.connecteam_external_id = result.externalId ?? null;
       data.connecteam_sync_date   = syncDate;
@@ -124,8 +238,10 @@ export async function PATCH(
     }
   }
 
-  return NextResponse.json({ data, connecteam: connecteamResult });
+  return NextResponse.json({ data, connecteam: connecteamResult, customer: customerResult });
 }
+
+// ── DELETE ────────────────────────────────────────────────────────────────────
 
 export async function DELETE(
   _req: NextRequest,
