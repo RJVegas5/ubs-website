@@ -37,6 +37,10 @@ export interface Lead {
   updated_at: string | null;
   converted_to_customer: boolean;
   customer_id: string | null;
+  // Connecteam
+  connecteam_sync_status: ConnecteamSyncStatus | null;
+  connecteam_external_id: string | null;
+  connecteam_sync_date: string | null;
 }
 
 // ── Appointment / Calendar Types ───────────────────────────────────────────
@@ -79,6 +83,10 @@ export interface Appointment {
   recurrence_rule: string | null;
   created_at: string;
   updated_at: string | null;
+  // Connecteam
+  connecteam_sync_status: ConnecteamSyncStatus | null;
+  connecteam_external_id: string | null;
+  connecteam_sync_date: string | null;
 }
 
 // ── Customer Types ─────────────────────────────────────────────────────────
@@ -129,6 +137,10 @@ export interface Job {
   completion_notes: string | null;
   created_at: string;
   updated_at: string | null;
+  // Connecteam
+  connecteam_sync_status: ConnecteamSyncStatus | null;
+  connecteam_external_id: string | null;
+  connecteam_sync_date: string | null;
 }
 
 // ── Estimate Types ─────────────────────────────────────────────────────────

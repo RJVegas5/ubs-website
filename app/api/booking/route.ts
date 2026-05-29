@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import {
-  isConnecteamConfigured,
-  mapBookingToConnecteamPayload,
-  createConnecteamJobOrShift,
-} from "@/lib/connecteam";
 
 export async function POST(req: NextRequest) {
   const data = await req.json();
@@ -33,9 +28,6 @@ export async function POST(req: NextRequest) {
           notes:          data.notes          ?? null,
           photos:         data.photos         ?? [],
           status:         "new",
-          // Connecteam sync will run after all other steps
-          connecteam_sync_status: isConnecteamConfigured() ? "pending" : "disabled",
-          connecteam_external_id: null,
           created_at: new Date().toISOString(),
         })
         .select("id")
@@ -184,82 +176,10 @@ export async function POST(req: NextRequest) {
     console.error("[booking] Email:", e);
   }
 
-  // ── 7. Connecteam sync ───────────────────────────────────────────────────────
-  // Always runs AFTER the booking is safely stored locally.
-  // A Connecteam failure NEVER fails the overall booking response.
-  if (isConnecteamConfigured() && supabase && bookingId) {
-    try {
-      const ctPayload = mapBookingToConnecteamPayload({
-        service:      data.service      ?? null,
-        companyName:  data.companyName  ?? null,
-        contactName:  data.contactName  ?? null,
-        phone:        data.phone        ?? null,
-        email:        data.email        ?? null,
-        address:      data.address      ?? null,
-        date:         data.date         ?? null,
-        timeSlot:     data.timeSlot     ?? null,
-        notes:        data.notes        ?? null,
-        instructions: data.instructions ?? null,
-        bookingId,
-        leadId,
-      });
-
-      const result = await createConnecteamJobOrShift(ctPayload);
-
-      // Mark synced + store external shift ID
-      await supabase
-        .from("bookings")
-        .update({
-          connecteam_sync_status: "synced",
-          connecteam_external_id: result.externalId ?? null,
-        })
-        .eq("id", bookingId);
-
-      // Activity: success
-      if (leadId) {
-        await Promise.resolve(supabase.from("activities").insert({
-          entity_type: "lead",
-          entity_id:   leadId,
-          action:      "connecteam_synced",
-          description: `Booking synced to Connecteam. Shift ID: ${result.externalId ?? "unknown"}`,
-          created_by:  "system",
-        })).catch(() => {});
-      }
-
-      console.log(`[booking] Connecteam sync OK — shift ${result.externalId ?? "?"} for booking ${bookingId}`);
-    } catch (ctErr) {
-      const errMsg = ctErr instanceof Error ? ctErr.message : String(ctErr);
-      console.error("[booking] Connecteam sync failed:", errMsg);
-
-      // Mark failed — booking is still saved; admin can retry
-      await Promise.resolve(
-        supabase.from("bookings").update({ connecteam_sync_status: "failed" }).eq("id", bookingId)
-      ).catch(() => {});
-
-      // Activity: failure (attached to lead if available)
-      const actTarget = leadId ?? bookingId;
-      await Promise.resolve(supabase.from("activities").insert({
-        entity_type: "lead",
-        entity_id:   actTarget,
-        action:      "connecteam_sync_failed",
-        description: `Connecteam sync failed for booking ${bookingId}: ${errMsg}`,
-        created_by:  "system",
-      })).catch(() => {});
-
-      // Notification: surface this in the admin dashboard
-      await Promise.resolve(supabase.from("notifications").insert({
-        type:  "system",
-        title: "Connecteam Sync Failed",
-        body:  `Booking ${bookingId} (${data.companyName ?? data.contactName ?? "new client"}) could not be synced to Connecteam: ${errMsg.slice(0, 200)}`,
-        link:  `/api/admin/connecteam/retry`,
-        read:  false,
-      })).catch(() => {});
-    }
-  } else if (!isConnecteamConfigured() && supabase && bookingId) {
-    // CONNECTEAM_ENABLED is false/missing — already marked "disabled" on insert,
-    // but log it clearly so it's obvious in dev.
-    console.log("[booking] Connecteam disabled — booking saved locally only.");
-  }
+  // Connecteam sync is intentionally NOT triggered here.
+  // Shifts are created only after a lead is approved (or manually via the CRM).
+  // See: /api/leads/[id] PATCH, /api/appointments, /api/jobs,
+  //      /api/admin/connecteam/send
 
   return NextResponse.json({ success: true, leadId, bookingId });
 }

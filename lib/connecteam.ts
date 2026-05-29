@@ -214,6 +214,138 @@ export async function createConnecteamJobOrShift(
   return { success: true, externalId: externalId ?? undefined, raw };
 }
 
+// ── Entity-specific mappers ───────────────────────────────────────────────────
+
+/**
+ * Converts a CRM Lead row into ConnecteamBookingPayload.
+ * Used when a lead status transitions to "approved" or "won".
+ * The shift date defaults to follow_up_date (if set) or tomorrow.
+ */
+export function mapLeadToConnecteamPayload(lead: {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  company_name: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  service: string | null;
+  building_type: string | null;
+  sq_footage: string | null;
+  frequency: string | null;
+  notes: string | null;
+  follow_up_date: string | null;
+}): ConnecteamBookingPayload {
+  const customerName =
+    [lead.first_name, lead.last_name].filter(Boolean).join(" ") ||
+    lead.company_name ||
+    "Unknown Client";
+
+  const extraNotes = [
+    lead.building_type ? `Property type: ${lead.building_type}` : null,
+    lead.sq_footage    ? `Facility size: ${lead.sq_footage}`    : null,
+    lead.frequency     ? `Frequency: ${lead.frequency}`         : null,
+    lead.notes         ? `Notes: ${lead.notes}`                 : null,
+  ]
+    .filter(Boolean)
+    .join("\n") || null;
+
+  return {
+    customerName,
+    companyName:      lead.company_name,
+    phone:            lead.phone,
+    email:            lead.email,
+    service:          lead.service,
+    address:          lead.address,
+    preferredDate:    lead.follow_up_date ?? null,
+    preferredTime:    null,                 // no time preference on a lead
+    notes:            extraNotes,
+    sourcePage:       "crm_lead_approved",
+    internalBookingId: null,
+    crmLeadId:        lead.id,
+  };
+}
+
+/**
+ * Converts an Appointment row into ConnecteamBookingPayload.
+ * Uses start_datetime for precise scheduling.
+ */
+export function mapAppointmentToConnecteamPayload(appt: {
+  id: string;
+  title: string;
+  service: string | null;
+  company_name: string | null;
+  contact_name: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  notes: string | null;
+  start_datetime: string;
+  end_datetime: string | null;
+  lead_id: string | null;
+  customer_id: string | null;
+}): ConnecteamBookingPayload {
+  // Extract YYYY-MM-DD and approximate time slot from start_datetime
+  const dt    = new Date(appt.start_datetime);
+  const date  = dt.toISOString().split("T")[0];
+  const hour  = dt.getUTCHours();
+  const slot  = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
+
+  const customerName = appt.contact_name ?? appt.company_name ?? "Client";
+
+  return {
+    customerName,
+    companyName:       appt.company_name,
+    phone:             appt.phone,
+    email:             appt.email,
+    service:           appt.service,
+    address:           appt.address,
+    preferredDate:     date,
+    preferredTime:     slot,
+    notes:             appt.notes,
+    sourcePage:        "crm_appointment_scheduled",
+    internalBookingId: null,
+    crmLeadId:         appt.lead_id,
+    // Store end_datetime override for the API call if provided
+    _endDatetimeOverride: appt.end_datetime ?? undefined,
+    _appointmentId:       appt.id,
+  } as ConnecteamBookingPayload & { _endDatetimeOverride?: string; _appointmentId?: string };
+}
+
+/**
+ * Converts a Job row into ConnecteamBookingPayload.
+ * Uses scheduled_date for the shift; defaults to tomorrow if absent.
+ */
+export function mapJobToConnecteamPayload(
+  job: {
+    id: string;
+    title: string;
+    service: string | null;
+    address: string | null;
+    notes: string | null;
+    scheduled_date: string | null;
+    lead_id: string | null;
+    customer_id: string | null;
+  },
+  customerName?: string | null
+): ConnecteamBookingPayload {
+  return {
+    customerName:      customerName ?? "Client",
+    companyName:       customerName ?? null,
+    phone:             null,
+    email:             null,
+    service:           job.service,
+    address:           job.address,
+    preferredDate:     job.scheduled_date ?? null,
+    preferredTime:     "morning",            // jobs default to morning start
+    notes:             job.notes,
+    sourcePage:        "crm_job_created",
+    internalBookingId: null,
+    crmLeadId:         job.lead_id,
+    _jobId:            job.id,
+  } as ConnecteamBookingPayload & { _jobId?: string };
+}
+
 // ── ID extractor ──────────────────────────────────────────────────────────────
 // Handles the two common Connecteam response shapes:
 //   • Array:            [{ id: "…", … }, …]
