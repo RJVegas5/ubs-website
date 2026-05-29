@@ -68,14 +68,19 @@ export default function AdminDashboard() {
   const [view, setView] = useState<AdminView>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notifCount, setNotifCount] = useState(0);
+  const [newLeadsCount, setNewLeadsCount] = useState(0);
   const [configured, setConfigured] = useState(true);
 
-  // Poll notification count
+  // Poll notification + new lead counts
   useEffect(() => {
     const fetchCount = async () => {
-      const res = await api<{ data: Notification[] }>("/api/notifications");
-      if (!res) { setConfigured(false); return; }
-      setNotifCount((res.data ?? []).filter((n) => !n.read).length);
+      const [notifRes, leadsRes] = await Promise.all([
+        api<{ data: Notification[] }>("/api/notifications"),
+        api<{ data: { status: string }[] }>("/api/leads?status=new"),
+      ]);
+      if (!notifRes) { setConfigured(false); return; }
+      setNotifCount((notifRes.data ?? []).filter((n) => !n.read).length);
+      setNewLeadsCount((leadsRes?.data ?? []).length);
     };
     fetchCount();
     const interval = setInterval(fetchCount, 30000);
@@ -106,6 +111,9 @@ export default function AdminDashboard() {
                   <span className="font-cond text-xs tracking-wider uppercase flex-1">{item.label}</span>
                   {item.id === "notifications" && notifCount > 0 && (
                     <span className="bg-[#F5C518] text-[#0D0F1E] text-[9px] font-bold px-1.5 py-0.5 rounded-full">{notifCount}</span>
+                  )}
+                  {item.id === "leads" && newLeadsCount > 0 && (
+                    <span className="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{newLeadsCount}</span>
                   )}
                 </button>
               ))}
