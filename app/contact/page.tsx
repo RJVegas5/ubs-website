@@ -19,6 +19,7 @@ export default function ContactPage() {
         title="LET'S BUILD YOUR"
         highlight="CLEANING ROUTINE."
         sub="Tell us about your facility and we'll build a custom plan. We respond within 2 business hours — guaranteed."
+        hideCta
       />
 
       <section className="py-20 relative overflow-hidden" style={{ background: "linear-gradient(180deg, #0D0F1E 0%, #070915 100%)" }}>

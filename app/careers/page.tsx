@@ -18,6 +18,7 @@ export default function CareersPage() {
         title="COME WORK"
         highlight="WITH US."
         sub="Join a family-owned company that values hard work, reliability, and integrity. We offer competitive pay, consistent hours Mon–Sat, and a team that genuinely has your back."
+        hideCta
       />
       <Careers />
       <Footer />
